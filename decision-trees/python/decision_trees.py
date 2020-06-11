@@ -1,5 +1,7 @@
 import json  # NOTE: this is here just so that the str() method is pretty
 
+import numpy as np
+
 
 class DecisionNode:
     """
@@ -7,10 +9,22 @@ class DecisionNode:
     """
 
     def __init__(
-        self, boundary: float = None, name: str = None, decision: float = None,
+        self,
+        boundary: float = None,
+        name: str = None,
+        decision: float = None,
+        indexes=None,
+        left=None,
+        right=None,
+        parent=None,
     ):
         self.set_boundary(boundary)
         self.set_decision(decision)
+        self.set_name(name)
+        self.set_indexes(indexes)
+        self.set_left(left)
+        self.set_right(right)
+        self.set_parent(parent)
 
     def __repr__(self):
         return json.dumps(self.to_dict(), indent=4)
@@ -74,6 +88,27 @@ class DecisionNode:
     def set_name(self, name):
         self.name = name
 
+    def get_indexes(self):
+        return self.indexes
+
+    def set_indexes(self, indexes):
+        self.indexes = indexes
+
+    def set_right(self, right):
+        self.right = right
+
+    def set_left(self, left):
+        self.left = left
+
+    def set_parent(self, parent):
+        self.set_parent = parent
+
+    def __is_left(self, x, boundary):
+        return x <= self.boundary
+
+    def __is_right(self, x, boundary):
+        return not self.__is_left(x, boundary)
+
     def traverse(self, x):
         """
         Traverse a decision node.
@@ -81,7 +116,7 @@ class DecisionNode:
         if self.is_leaf():
             return decision
 
-        if x <= self.boundary:
+        if self.__is_left(x, self.boundary):
             return self.left.traverse(x)
         else:
             return self.right.traverse(x)
@@ -94,3 +129,17 @@ class DecisionTree:
 
     def __init__(self):
         self.root = None
+
+    def __is_left(self, x, decision):
+        return
+
+    def __fit_node(self, x, y):
+        boundary = x.mean()
+        decision = y.mean()
+
+        return None
+
+    def fit(self, X, y):
+        self.root = DecisionNode()
+
+        return self
