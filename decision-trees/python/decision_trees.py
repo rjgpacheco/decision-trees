@@ -1,6 +1,8 @@
 import json  # NOTE: this is here just so that the str() method is pretty
-
 import numpy as np
+
+MIN_NODE_INSTANCES = 1
+NODE_MAX_DEPTH = 3
 
 
 class DecisionNode:
@@ -13,43 +15,38 @@ class DecisionNode:
         boundary: float = None,
         name: str = None,
         decision: float = None,
-        indexes=None,
+        indexes=[],
         left=None,
         right=None,
         parent=None,
+        depth=0,
     ):
-        self.set_boundary(boundary)
-        self.set_decision(decision)
-        self.set_name(name)
-        self.set_indexes(indexes)
-        self.set_left(left)
-        self.set_right(right)
-        self.set_parent(parent)
+
+        self.boundary = boundary
+        self.decision = decision
+        self.name = name
+        if isinstance(indexes, np.ndarray):
+            indexes = indexes.tolist()
+        self.indexes = indexes
+        self.left = left
+        self.right = right
+        self.parent = parent
+        self.depth = depth
 
     def __repr__(self):
+        # return "node"
         return json.dumps(self.to_dict(), indent=4)
 
     def to_dict(self):
         dict_form = {
-            "left": self.left.__dict__,
-            "right": self.right.__dict__,
-            "boundary": self.boundary,
             "name": self.name,
             "decision": self.decision,
-        }
-        return dict_form
-
-    def to_dict(self):
-
-        left = None if self.left is None else self.left.__dict__
-        right = None if self.right is None else self.right.__dict__
-
-        dict_form = {
-            "left": left,
-            "right": right,
             "boundary": self.boundary,
-            "name": self.name,
-            "decision": self.decision,
+            "depth": self.depth,
+            "indexes": self.indexes,
+            "left": None if self.left is None else self.left.to_dict(),
+            "right": None if self.right is None else self.right.to_dict(),
+            #  "parent": None if self.parent is None else self.parent.to_dict(),
         }
         return dict_form
 
@@ -68,46 +65,15 @@ class DecisionNode:
         # NOTE: this is ignoring the existence of a boundary
         return not (self.left or self.right)
 
-    def set_boundary(self, boundary):
-        """
-        Sets a decision boundary and initializes left and right child nodes.
-        """
+    def is_left(self, x):
+        if not isinstance(x, np.ndarray):
+            x = np.ndarray(x)
+        return (x <= self.boundary).astype(int)
 
-        if boundary is None:
-            self.boundary = None
-            self.right = None
-            self.left = None
-        else:
-            self.boundary = boundary
-            self.right = DecisionNode()
-            self.left = DecisionNode()
-
-    def set_decision(self, decision):
-        self.decision = decision
-
-    def set_name(self, name):
-        self.name = name
-
-    def get_indexes(self):
-        return self.indexes
-
-    def set_indexes(self, indexes):
-        self.indexes = indexes
-
-    def set_right(self, right):
-        self.right = right
-
-    def set_left(self, left):
-        self.left = left
-
-    def set_parent(self, parent):
-        self.set_parent = parent
-
-    def __is_left(self, x, boundary):
-        return x <= self.boundary
-
-    def __is_right(self, x, boundary):
-        return not self.__is_left(x, boundary)
+    def is_right(self, x):
+        if not isinstance(x, np.ndarray):
+            x = np.ndarray(x)
+        return (x > self.boundary).astype(int)
 
     def traverse(self, x):
         """
@@ -121,6 +87,45 @@ class DecisionNode:
         else:
             return self.right.traverse(x)
 
+    def fit_node(self, x, y, indexes):
+        self.indexes = indexes
+        if x is None or y is None:
+            raise ValueError("x and y must not be None")
+
+        if len(x) != len(y):
+            raise ValueError("x and y must have same length")
+
+        if len(x) <= MIN_NODE_INSTANCES:
+            raise Warning("Only one instance supplied to fit_node")
+            self.decision = y.mean()  # TODO: This is the "hello world" of decisions
+            return self
+
+        if self.depth >= NODE_MAX_DEPTH:
+            raise Warning(f"Max depth of {NODE_MAX_DEPTH} reached")
+
+        self.boundary = x.mean()  # TODO: This is the "hello world" of decisions
+        self.decision = y.mean()  # TODO: This is the "hello world" of decisions
+
+        index_left = self.is_left(x)
+        index_right = self.is_right(x)
+
+        decision_left = y[index_left].mean()
+        decision_right = y[index_right].mean()
+
+        self.left = DecisionNode(
+            indexes=index_left,
+            decision=decision_left,
+            parent=self,
+            depth=self.depth + 1,
+        )
+
+        self.right = DecisionNode(
+            indexes=index_right,
+            decision=decision_right,
+            parent=self,
+            depth=self.depth + 1,
+        )
+
 
 class DecisionTree:
     """
@@ -129,15 +134,6 @@ class DecisionTree:
 
     def __init__(self):
         self.root = None
-
-    def __is_left(self, x, decision):
-        return
-
-    def __fit_node(self, x, y):
-        boundary = x.mean()
-        decision = y.mean()
-
-        return None
 
     def fit(self, X, y):
         self.root = DecisionNode()
