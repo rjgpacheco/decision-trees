@@ -25,13 +25,12 @@ class DecisionNode:
         self.boundary = boundary
         self.decision = decision
         self.name = name
-        if isinstance(indexes, np.ndarray):
-            indexes = indexes.tolist()
         self.indexes = indexes
         self.left = left
         self.right = right
         self.parent = parent
         self.depth = depth
+        self.type = "ordinal"
 
     def __repr__(self):
         # return "node"
@@ -43,7 +42,8 @@ class DecisionNode:
             "decision": self.decision,
             "boundary": self.boundary,
             "depth": self.depth,
-            "indexes": self.indexes,
+            "type": self.type,
+            "indexes": self.indexes.tolist(),
             "left": None if self.left is None else self.left.to_dict(),
             "right": None if self.right is None else self.right.to_dict(),
             #  "parent": None if self.parent is None else self.parent.to_dict(),
@@ -95,16 +95,17 @@ class DecisionNode:
         if len(x) != len(y):
             raise ValueError("x and y must have same length")
 
+        self.boundary = x.mean()  # TODO: This is the "hello world" of decisions
+        self.decision = y.mean()  # TODO: This is the "hello world" of decisions
+
         if len(x) <= MIN_NODE_INSTANCES:
             raise Warning("Only one instance supplied to fit_node")
             self.decision = y.mean()  # TODO: This is the "hello world" of decisions
-            return self
+            return
 
         if self.depth >= NODE_MAX_DEPTH:
             raise Warning(f"Max depth of {NODE_MAX_DEPTH} reached")
-
-        self.boundary = x.mean()  # TODO: This is the "hello world" of decisions
-        self.decision = y.mean()  # TODO: This is the "hello world" of decisions
+            return
 
         index_left = self.is_left(x)
         index_right = self.is_right(x)
@@ -125,6 +126,21 @@ class DecisionNode:
             parent=self,
             depth=self.depth + 1,
         )
+
+    @property
+    def indexes(self):
+        return self._indexes
+
+    @indexes.setter
+    def indexes(self, value):
+        if isinstance(value, np.ndarray):
+            self._indexes = value
+        else:
+            self._indexes = np.ndarray(value)
+
+    @indexes.deleter
+    def indexes(self):
+        del self._indexes
 
 
 class DecisionTree:
