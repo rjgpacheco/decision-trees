@@ -3,7 +3,7 @@ import pytest
 from sklearn import datasets
 import numpy as np
 
-sys.path.append("/Users/ricardo/repos-personal/decision-trees/decision-trees/python")
+sys.path.append("../../decision-trees/python")
 
 from decision_trees import DecisionNode
 
