@@ -1,5 +1,6 @@
 import json  # NOTE: this is here just so that the str() method is pretty
 import numpy as np
+from uuid import uuid4
 
 MIN_NODE_INSTANCES = 1
 NODE_MAX_DEPTH = 3
@@ -25,12 +26,15 @@ class DecisionNode:
         self.boundary = boundary
         self.decision = decision
         self.name = name
-        self.indexes = indexes
+        self.feature_index_global = None
+        self.feature_index_local = None
+        self.indexes = indexes  #  TODO: move this over to training utilities
         self.left = left
         self.right = right
         self.parent = parent
         self.depth = depth
         self.type = "ordinal"
+        self.node_id = uuid4().hex
 
     def __repr__(self):
         # return "node"
@@ -43,7 +47,8 @@ class DecisionNode:
             "boundary": self.boundary,
             "depth": self.depth,
             "type": self.type,
-            "indexes": self.indexes.tolist(),
+            "node_id": self.node_id,
+            #     "indexes": self.indexes.tolist(),
             "left": None if self.left is None else self.left.to_dict(),
             "right": None if self.right is None else self.right.to_dict(),
             #  "parent": None if self.parent is None else self.parent.to_dict(),
