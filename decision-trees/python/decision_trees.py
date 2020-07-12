@@ -1,5 +1,7 @@
 import json  # NOTE: this is here just so that the str() method is pretty
 import numpy as np
+
+from utils import is_left, is_right
 from uuid import uuid4
 
 MIN_NODE_INSTANCES = 1
@@ -71,14 +73,10 @@ class DecisionNode:
         return not (self.left or self.right)
 
     def is_left(self, x):
-        if not isinstance(x, np.ndarray):
-            x = np.ndarray(x)
-        return (x <= self.boundary).astype(int)
+        return is_left(x, self.boundary)
 
     def is_right(self, x):
-        if not isinstance(x, np.ndarray):
-            x = np.ndarray(x)
-        return (x > self.boundary).astype(int)
+        return is_right(x, self.boundary)
 
     def traverse(self, x):
         """
