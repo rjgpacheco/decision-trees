@@ -1,13 +1,15 @@
 import numpy as np
 
 
-def is_left(x, boundary):
+def to_array(x):
     if not isinstance(x, np.ndarray):
-        x = np.ndarray(x)
-    return (x <= boundary).astype(int)
+        x = np.array(x)
+    return x
+
+
+def is_left(x, boundary):
+    return (to_array(x) <= boundary).astype(int)
 
 
 def is_right(x, boundary):
-    if not isinstance(x, np.ndarray):
-        x = np.ndarray(x)
-    return (x > boundary).astype(int)
+    return (to_array(x) > boundary).astype(int)
