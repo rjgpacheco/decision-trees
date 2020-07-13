@@ -7,7 +7,7 @@ from utils import is_left, is_right, to_array
 
 
 def gini_impurity(y):
-    _, counts = np.unique(y, return_counts=True)
+    categories, counts = np.unique(y, return_counts=True)
     p = counts / counts.sum()  # Class probabilities
     return 1 - np.multiply(p, p).sum()  # Final Gini calculation
 
