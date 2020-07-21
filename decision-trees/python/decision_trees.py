@@ -1,4 +1,6 @@
 import json  # NOTE: this is here just so that the str() method is pretty
+import warnings
+
 import numpy as np
 
 from utils import is_left, is_right
@@ -18,7 +20,7 @@ class DecisionNode:
         boundary: float = None,
         name: str = None,
         decision: float = None,
-        indexes=[],
+        indexes=None,
         left=None,
         right=None,
         parent=None,
@@ -60,10 +62,9 @@ class DecisionNode:
     def from_dict(self, dictionary):
         if dictionary is None:
             return None
-        newNode = DecisionNode()
-        newNode.left = dictionary["left"]
-
-        return newNode
+        new_node = DecisionNode()
+        new_node.left = dictionary["left"]
+        return new_node
 
     def is_leaf(self):
         """
@@ -83,9 +84,9 @@ class DecisionNode:
         Traverse a decision node.
         """
         if self.is_leaf():
-            return decision
+            return self.decision
 
-        if self.__is_left(x, self.boundary):
+        if self.is_left(x):
             return self.left.traverse(x)
         else:
             return self.right.traverse(x)
@@ -102,13 +103,13 @@ class DecisionNode:
         self.decision = y.mean()  # TODO: This is the "hello world" of decisions
 
         if len(x) <= MIN_NODE_INSTANCES:
-            raise Warning("Only one instance supplied to fit_node")
+            warnings.warn("Only one instance supplied to fit_node")
             self.decision = y.mean()  # TODO: This is the "hello world" of decisions
-            return
+            return self
 
         if self.depth >= NODE_MAX_DEPTH:
-            raise Warning(f"Max depth of {NODE_MAX_DEPTH} reached")
-            return
+            warnings.warn(f"Max depth of {NODE_MAX_DEPTH} reached")
+            return self
 
         index_left = self.is_left(x)
         index_right = self.is_right(x)
@@ -129,6 +130,8 @@ class DecisionNode:
             parent=self,
             depth=self.depth + 1,
         )
+
+        return self
 
     @property
     def indexes(self):
