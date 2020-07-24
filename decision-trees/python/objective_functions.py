@@ -20,7 +20,7 @@ def gini_impurity_split(x, y, boundary):
     gini_l = gini_impurity(y[left])
     gini_r = gini_impurity(y[right])
 
-    gini_split = gini_l * len(left) + gini_r * len(right)
+    gini_split = gini_l * left.sum() + gini_r * right.sum()
     gini_split = gini_split / len(y)
     return gini_split
 
