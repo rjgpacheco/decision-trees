@@ -18,7 +18,7 @@ class DecisionNode:
     def __init__(
         self,
         boundary: float = None,
-        name: str = None,
+        node_id: str = None,
         decision: float = None,
         indexes=None,
         left=None,
@@ -29,7 +29,6 @@ class DecisionNode:
 
         self.boundary = boundary
         self.decision = decision
-        self.name = name
         self.feature_index_global = None
         self.feature_index_local = None
         self.indexes = indexes  #  TODO: move this over to training utilities
@@ -39,6 +38,8 @@ class DecisionNode:
         self.depth = depth
         self.type = "ordinal"
         self.node_id = uuid4().hex
+        self.class_counts = {}
+        self.class_scores = {}
 
     def __repr__(self):
         # return "node"
@@ -46,16 +47,15 @@ class DecisionNode:
 
     def to_dict(self):
         dict_form = {
-            "name": self.name,
             "decision": self.decision,
+            "class_scores": self.class_scores,
             "boundary": self.boundary,
             "depth": self.depth,
             "type": self.type,
             "node_id": self.node_id,
-            #     "indexes": self.indexes.tolist(),
+            "class_counts": self.class_counts,
             "left": None if self.left is None else self.left.to_dict(),
             "right": None if self.right is None else self.right.to_dict(),
-            #  "parent": None if self.parent is None else self.parent.to_dict(),
         }
         return dict_form
 
@@ -91,8 +91,17 @@ class DecisionNode:
         else:
             return self.right.traverse(x)
 
-    def fit_node(self, x, y, indexes):
+    def fit_node(self, x, y, indexes=None):
         self.indexes = indexes
+
+        categories, counts = np.unique(y, return_counts=True)
+        probabilities = counts / counts.sum()  # Class probabilities
+        categories = [str(x) for x in categories]
+        counts = [int(x) for x in counts]
+
+        self.class_scores = dict(zip(categories, probabilities))
+        self.class_counts = dict(zip(categories, counts))
+
         if x is None or y is None:
             raise ValueError("x and y must not be None")
 
@@ -114,21 +123,12 @@ class DecisionNode:
         index_left = self.is_left(x)
         index_right = self.is_right(x)
 
-        decision_left = y[index_left].mean()
-        decision_right = y[index_right].mean()
-
-        self.left = DecisionNode(
-            indexes=index_left,
-            decision=decision_left,
-            parent=self,
-            depth=self.depth + 1,
+        self.left = DecisionNode(parent=self, depth=self.depth + 1,).fit_node(
+            x=x[index_left], y=y[index_left]
         )
 
-        self.right = DecisionNode(
-            indexes=index_right,
-            decision=decision_right,
-            parent=self,
-            depth=self.depth + 1,
+        self.right = DecisionNode(parent=self, depth=self.depth + 1,).fit_node(
+            x=x[index_right], y=y[index_right]
         )
 
         return self
