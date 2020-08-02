@@ -159,5 +159,4 @@ class DecisionTree:
 
     def fit(self, X, y):
         self.root = DecisionNode()
-
         return self
