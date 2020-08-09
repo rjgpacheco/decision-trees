@@ -9,11 +9,18 @@ from uuid import uuid4
 MIN_NODE_INSTANCES = 1
 NODE_MAX_DEPTH = 3
 
+import logging
+
+FORMAT = '%(asctime)-15s %(message)s'
+logging.basicConfig(filename='decision_trees.log', level=logging.INFO, format=FORMAT)
 
 class DecisionNode:
     """
     Decision node for a numerical feature
     """
+
+    logging.getLogger(__name__)
+
 
     def __init__(
         self,
@@ -40,6 +47,8 @@ class DecisionNode:
         self.node_id = uuid4().hex
         self.class_counts = {}
         self.class_scores = {}
+
+        logging.info(f"{self.node_id} Initializing node ")
 
     def __repr__(self):
         # return "node"
@@ -92,6 +101,9 @@ class DecisionNode:
             return self.right.traverse(x)
 
     def fit_node(self, x, y, indexes=None):
+
+        logging.info(f"{self.node_id} Calling fit_node")
+
         self.indexes = indexes
 
         categories, counts = np.unique(y, return_counts=True)
@@ -101,6 +113,9 @@ class DecisionNode:
 
         self.class_scores = dict(zip(categories, probabilities))
         self.class_counts = dict(zip(categories, counts))
+
+        logging.info(f"{self.node_id} self.class_counts={self.class_scores}")
+        logging.info(f"{self.node_id} self.class_scores={self.class_counts}")
 
         if x is None or y is None:
             raise ValueError("x and y must not be None")
