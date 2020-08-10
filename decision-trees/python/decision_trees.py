@@ -11,8 +11,9 @@ NODE_MAX_DEPTH = 3
 
 import logging
 
-FORMAT = '%(asctime)-15s %(message)s'
-logging.basicConfig(filename='decision_trees.log', level=logging.INFO, format=FORMAT)
+FORMAT = "%(asctime)-15s %(message)s"
+logging.basicConfig(filename="decision_trees.log", level=logging.INFO, format=FORMAT)
+
 
 class DecisionNode:
     """
@@ -20,7 +21,6 @@ class DecisionNode:
     """
 
     logging.getLogger(__name__)
-
 
     def __init__(
         self,
@@ -100,7 +100,7 @@ class DecisionNode:
         else:
             return self.right.traverse(x)
 
-    def fit_node(self, x, y, indexes=None):
+    def fit(self, x, y, indexes=None):
 
         logging.info(f"{self.node_id} Calling fit_node")
 
@@ -138,11 +138,11 @@ class DecisionNode:
         index_left = self.is_left(x)
         index_right = self.is_right(x)
 
-        self.left = DecisionNode(parent=self, depth=self.depth + 1,).fit_node(
+        self.left = DecisionNode(parent=self, depth=self.depth + 1,).fit(
             x=x[index_left], y=y[index_left]
         )
 
-        self.right = DecisionNode(parent=self, depth=self.depth + 1,).fit_node(
+        self.right = DecisionNode(parent=self, depth=self.depth + 1,).fit(
             x=x[index_right], y=y[index_right]
         )
 
@@ -168,7 +168,7 @@ class DecisionTree:
     """
     Decision tree for a numerical feature
     """
-    
+
     def __init__(self):
         self.root = None
 
