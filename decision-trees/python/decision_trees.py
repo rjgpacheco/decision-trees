@@ -102,7 +102,7 @@ class DecisionNode:
 
     def fit(self, x, y, indexes=None):
 
-        logging.info(f"{self.node_id} Calling fit_node")
+        logging.info(f"{self.node_id} Calling fit()")
 
         self.indexes = indexes
 
@@ -127,7 +127,7 @@ class DecisionNode:
         self.decision = y.mean()  # TODO: This is the "hello world" of decisions
 
         if len(x) <= MIN_NODE_INSTANCES:
-            warnings.warn("Only one instance supplied to fit_node")
+            warnings.warn("Only one instance supplied to fit()")
             self.decision = y.mean()  # TODO: This is the "hello world" of decisions
             return self
 
