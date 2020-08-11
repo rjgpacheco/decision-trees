@@ -170,8 +170,8 @@ class DecisionTree:
     """
     
     def __init__(self):
-        self.root = None
+        self.root = DecisionNode()
 
     def fit(self, X, y):
-        self.root = DecisionNode()
+        self.root.fit_node(X, y)
         return self
