@@ -11,8 +11,9 @@ NODE_MAX_DEPTH = 3
 
 import logging
 
-FORMAT = '%(asctime)-15s %(message)s'
-logging.basicConfig(filename='decision_trees.log', level=logging.INFO, format=FORMAT)
+FORMAT = "%(asctime)-15s %(message)s"
+logging.basicConfig(filename="decision_trees.log", level=logging.INFO, format=FORMAT)
+
 
 class DecisionNode:
     """
@@ -20,7 +21,6 @@ class DecisionNode:
     """
 
     logging.getLogger(__name__)
-
 
     def __init__(
         self,
@@ -100,22 +100,9 @@ class DecisionNode:
         else:
             return self.right.traverse(x)
 
-    def fit_node(self, x, y, indexes=None):
+    def fit(self, x, y, recursive=False, indexes=None):
 
-        logging.info(f"{self.node_id} Calling fit_node")
-
-        self.indexes = indexes
-
-        categories, counts = np.unique(y, return_counts=True)
-        probabilities = counts / counts.sum()  # Class probabilities
-        categories = [str(x) for x in categories]
-        counts = [int(x) for x in counts]
-
-        self.class_scores = dict(zip(categories, probabilities))
-        self.class_counts = dict(zip(categories, counts))
-
-        logging.info(f"{self.node_id} self.class_counts={self.class_scores}")
-        logging.info(f"{self.node_id} self.class_scores={self.class_counts}")
+        logging.info(f"{self.node_id} Calling fit()")
 
         if x is None or y is None:
             raise ValueError("x and y must not be None")
@@ -123,29 +110,56 @@ class DecisionNode:
         if len(x) != len(y):
             raise ValueError("x and y must have same length")
 
-        self.boundary = x.mean()  # TODO: This is the "hello world" of decisions
-        self.decision = y.mean()  # TODO: This is the "hello world" of decisions
+        categories, counts = np.unique(y, return_counts=True)
+        probabilities = counts / counts.sum()  # Class probabilities
 
-        if len(x) <= MIN_NODE_INSTANCES:
-            warnings.warn("Only one instance supplied to fit_node")
-            self.decision = y.mean()  # TODO: This is the "hello world" of decisions
+        categories = [str(x) for x in categories]
+        counts = [int(x) for x in counts]
+
+        self.class_scores = dict(zip(categories, probabilities))
+        self.class_counts = dict(zip(categories, counts))
+
+        # Stopping conditions
+        if len(categories) <= 1:
+            logging.warning(f"Pure node, stopping training")
+            self.decision = y.mean()
             return self
 
         if self.depth >= NODE_MAX_DEPTH:
-            warnings.warn(f"Max depth of {NODE_MAX_DEPTH} reached")
+            logging.warning(f"Max depth of {NODE_MAX_DEPTH} reached")
+            return None
+
+        if len(x) <= MIN_NODE_INSTANCES:
+            logging.warning("Only one instance supplied to fit()")
+            self.decision = y.mean()  # TODO: This is the "hello world" of decisions
             return self
 
+        # Actual node training
+        self.indexes = indexes
+
+        logging.info(f"{self.node_id} self.class_counts={self.class_scores}")
+        logging.info(f"{self.node_id} self.class_scores={self.class_counts}")
+
+        # Set boundary and decision
+        self.boundary = x.mean()  # TODO: This is the "hello world" of decisions
+        self.decision = y.mean()  # TODO: This is the "hello world" of decisions
+
+        if recursive:
+            self.fit_children(x, y, recursive=recursive, indexes=indexes)
+
+        return self
+
+    def fit_children(self, x, y, recursive=False, indexes=None):
         index_left = self.is_left(x)
         index_right = self.is_right(x)
 
-        self.left = DecisionNode(parent=self, depth=self.depth + 1,).fit_node(
-            x=x[index_left], y=y[index_left]
+        self.left = DecisionNode(parent=self, depth=self.depth + 1,).fit(
+            x=x[index_left], y=y[index_left], recursive=recursive, indexes=indexes
         )
 
-        self.right = DecisionNode(parent=self, depth=self.depth + 1,).fit_node(
-            x=x[index_right], y=y[index_right]
+        self.right = DecisionNode(parent=self, depth=self.depth + 1,).fit(
+            x=x[index_right], y=y[index_right], recursive=recursive, indexes=indexes
         )
-
         return self
 
     @property
@@ -168,7 +182,7 @@ class DecisionTree:
     """
     Decision tree for a numerical feature
     """
-    
+
     def __init__(self):
         self.root = DecisionNode()
 
