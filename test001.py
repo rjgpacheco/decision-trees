@@ -17,6 +17,6 @@ y = (y == 0).astype(int)
 
 x0 = X[:, 0]
 
-node.fit(x0, y, indexes=np.ndarray([]))
+node.fit(x0, y, recursive=True)
 
 print(node)
