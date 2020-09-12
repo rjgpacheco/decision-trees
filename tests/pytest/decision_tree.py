@@ -6,6 +6,7 @@ import numpy as np
 sys.path.append("../../decision-trees/python")
 
 from decision_trees import DecisionNode
+from decision_trees import DecisionTree
 
 node = DecisionNode()
 
@@ -20,3 +21,9 @@ x0 = X[:, 0]
 node.fit(x0, y, indexes=np.ndarray([]))
 
 print(node)
+
+
+# Tree
+
+tree = DecisionTree().fit(x0, y)
+print(tree)

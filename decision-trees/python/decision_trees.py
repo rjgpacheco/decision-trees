@@ -187,5 +187,12 @@ class DecisionTree:
         self.root = DecisionNode()
 
     def fit(self, X, y):
-        self.root.fit(X, y)
+        self.root.fit(X, y, recursive=True)
         return self
+
+    def score(self, x):
+        return self.root.traverse(x)
+    
+    def __repr__(self):
+        # return "node"
+        return str(self.root)
