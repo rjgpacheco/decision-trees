@@ -16,14 +16,10 @@ X = iris["data"]
 y = iris["target"]
 y = (y == 0).astype(int)
 
-x0 = X[:, 0]
-
-node.fit(x0, y, indexes=np.ndarray([]))
-
-print(node)
+node.fit(X, y, indexes=np.ndarray([]))
 
 
 # Tree
 
-tree = DecisionTree().fit(x0, y)
+tree = DecisionTree().fit(X, y)
 print(tree)

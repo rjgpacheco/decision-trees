@@ -1,5 +1,6 @@
 import json  # NOTE: this is here just so that the str() method is pretty
 import warnings
+import random
 
 import numpy as np
 
@@ -32,6 +33,7 @@ class DecisionNode:
         right=None,
         parent=None,
         depth=0,
+        decision_index=None,
     ):
 
         self.boundary = boundary
@@ -47,6 +49,7 @@ class DecisionNode:
         self.node_id = uuid4().hex
         self.class_counts = {}
         self.class_scores = {}
+        self.decision_index = decision_index
 
         logging.info(f"{self.node_id} Initializing node ")
 
@@ -54,17 +57,22 @@ class DecisionNode:
         # return "node"
         return json.dumps(self.to_dict(), indent=4)
 
+
     def to_dict(self):
         dict_form = {
-            "decision": self.decision,
-            "class_scores": self.class_scores,
             "boundary": self.boundary,
+            "decision": self.decision,
+            # "feature_index_global": self.None,
+            # "feature_index_local": self.None,
+            "indexes": [] if self.indexes is None else self.indexes.astype(int).tolist(),  #  TODO: move this over to training utilities,
+            "left": None if self.left is None else self.left.to_dict(),
+            "right": None if self.right is None else self.right.to_dict(),
             "depth": self.depth,
             "type": self.type,
             "node_id": self.node_id,
             "class_counts": self.class_counts,
-            "left": None if self.left is None else self.left.to_dict(),
-            "right": None if self.right is None else self.right.to_dict(),
+            "class_scores": self.class_scores,
+            "decision_index": self.decision_index,
         }
         return dict_form
 
@@ -82,39 +90,46 @@ class DecisionNode:
         # NOTE: this is ignoring the existence of a boundary
         return not (self.left or self.right)
 
-    def is_left(self, x):
-        return is_left(x, self.boundary)
+    def is_left(self, X):
+        return is_left(
+            self.get_feature_from_matrix(X, self.decision_index), self.boundary
+        )
 
-    def is_right(self, x):
-        return is_right(x, self.boundary)
+    def is_right(self, X):
+        return is_right(
+            self.get_feature_from_matrix(X, self.decision_index), self.boundary
+        )
 
-    def traverse(self, x):
+    def traverse(self, X):
         """
         Traverse a decision node.
         """
+
+        x = self.get_feature_from_matrix(X, self.decision_index)
+
         if self.is_leaf():
             return self.decision
 
         if self.is_left(x):
-            return self.left.traverse(x)
+            return self.left.traverse(X)
         else:
-            return self.right.traverse(x)
+            return self.right.traverse(X)
 
-    def fit(self, x, y, recursive=False, indexes=None):
+    def fit(self, X, y, recursive=False, indexes=None):
 
         logging.info(f"{self.node_id} Calling fit()")
 
-        if x is None or y is None:
+        if X is None or y is None:
             raise ValueError("x and y must not be None")
 
-        if len(x) != len(y):
+        if self.get_n_instances(X) != len(y):
             raise ValueError("x and y must have same length")
 
         categories, counts = np.unique(y, return_counts=True)
         probabilities = counts / counts.sum()  # Class probabilities
 
-        categories = [str(x) for x in categories]
-        counts = [int(x) for x in counts]
+        categories = [str(_) for _ in categories]
+        counts = [int(_) for _ in counts]
 
         self.class_scores = dict(zip(categories, probabilities))
         self.class_counts = dict(zip(categories, counts))
@@ -129,7 +144,7 @@ class DecisionNode:
             logging.warning(f"Max depth of {NODE_MAX_DEPTH} reached")
             return None
 
-        if len(x) <= MIN_NODE_INSTANCES:
+        if self.get_n_instances(X) <= MIN_NODE_INSTANCES:
             logging.warning("Only one instance supplied to fit()")
             self.decision = y.mean()  # TODO: This is the "hello world" of decisions
             return self
@@ -141,24 +156,29 @@ class DecisionNode:
         logging.info(f"{self.node_id} self.class_scores={self.class_counts}")
 
         # Set boundary and decision
-        self.boundary = x.mean()  # TODO: This is the "hello world" of decisions
-        self.decision = y.mean()  # TODO: This is the "hello world" of decisions
+        self.decision_index, self.boundary, self.decision = self.get_best_split(X, y)
 
         if recursive:
-            self.fit_children(x, y, recursive=recursive, indexes=indexes)
+            self.fit_children(X, y, recursive=recursive, indexes=indexes)
 
         return self
 
-    def fit_children(self, x, y, recursive=False, indexes=None):
-        index_left = self.is_left(x)
-        index_right = self.is_right(x)
+    def fit_children(self, X, y, recursive=False, indexes=None):
+        index_left = self.is_left(X)
+        index_right = self.is_right(X)
 
         self.left = DecisionNode(parent=self, depth=self.depth + 1,).fit(
-            x=x[index_left], y=y[index_left], recursive=recursive, indexes=indexes
+            X=self.get_matrix_by_index(X, index_left),
+            y=y[index_left],
+            recursive=recursive,
+            indexes=index_left,
         )
 
         self.right = DecisionNode(parent=self, depth=self.depth + 1,).fit(
-            x=x[index_right], y=y[index_right], recursive=recursive, indexes=indexes
+            X=self.get_matrix_by_index(X, index_right),
+            y=y[index_right],
+            recursive=recursive,
+            indexes=index_right,
         )
         return self
 
@@ -177,6 +197,39 @@ class DecisionNode:
     def indexes(self):
         del self._indexes
 
+    def get_feature_from_matrix(self, X, decision_feature_index):
+        """
+        Get feature of feature matrix. This funcion only exists to prevent future bugs.
+        """
+        return X[:, decision_feature_index]
+
+    def get_n_features(self, X):
+        """
+        Get number of feature in matrix. This funcion only exists to prevent future bugs.
+        """
+        return X.shape[1]
+
+    def get_n_instances(self, X):
+        """
+        Get number of instances in matrix. This funcion only exists to prevent future bugs.
+        """
+        return X.shape[0]
+
+    def get_matrix_by_index(self, X, indexes):
+        """
+        Get instances by index vector. This funcion only exists to prevent future bugs.
+        """
+        return X[indexes, :]
+
+    def get_best_split(self, X, y):
+        index = random.randint(
+            0, self.get_n_features(X) - 1
+        )  # TODO: This will be a terribly complicated method...
+        x = self.get_feature_from_matrix(X, index)
+        boundary = x.mean()  # TODO: This is the "hello world" of decisions
+        decision = y.mean()  # TODO: This is the "hello world" of decisions
+        return index, boundary, decision
+
 
 class DecisionTree:
     """
@@ -192,7 +245,7 @@ class DecisionTree:
 
     def score(self, x):
         return self.root.traverse(x)
-    
+
     def __repr__(self):
         # return "node"
         return str(self.root)
