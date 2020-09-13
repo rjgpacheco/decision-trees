@@ -4,7 +4,6 @@ import random
 
 import numpy as np
 
-from data import MachineLearningData
 from utils import is_left, is_right
 from uuid import uuid4
 
@@ -58,17 +57,14 @@ class DecisionNode:
         # return "node"
         return json.dumps(self.to_dict(), indent=4)
 
+
     def to_dict(self):
-        return {
+        dict_form = {
             "boundary": self.boundary,
             "decision": self.decision,
             # "feature_index_global": self.None,
             # "feature_index_local": self.None,
-            "indexes": []
-            if self.indexes is None
-            else self.indexes.astype(
-                int
-            ).tolist(),  #  TODO: move this over to training utilities,
+            "indexes": [] if self.indexes is None else self.indexes.astype(int).tolist(),  #  TODO: move this over to training utilities,
             "left": None if self.left is None else self.left.to_dict(),
             "right": None if self.right is None else self.right.to_dict(),
             "depth": self.depth,
@@ -78,6 +74,7 @@ class DecisionNode:
             "class_scores": self.class_scores,
             "decision_index": self.decision_index,
         }
+        return dict_form
 
     def from_dict(self, dictionary):
         if dictionary is None:
@@ -118,13 +115,7 @@ class DecisionNode:
         else:
             return self.right.traverse(X)
 
-    def fit(self, data: MachineLearningData, recursive=False, indexes=None):
-        self._fit(
-            X=data.X, y=data.y, schema=data.schema, recursive=recursive, indexes=indexes
-        )
-        return self
-
-    def _fit(self, X, y, schema=None, recursive=False, indexes=None):
+    def fit(self, X, y, recursive=False, indexes=None):
 
         logging.info(f"{self.node_id} Calling fit()")
 
@@ -176,14 +167,14 @@ class DecisionNode:
         index_left = self.is_left(X)
         index_right = self.is_right(X)
 
-        self.left = DecisionNode(parent=self, depth=self.depth + 1,)._fit(
+        self.left = DecisionNode(parent=self, depth=self.depth + 1,).fit(
             X=self.get_matrix_by_index(X, index_left),
             y=y[index_left],
             recursive=recursive,
             indexes=index_left,
         )
 
-        self.right = DecisionNode(parent=self, depth=self.depth + 1,)._fit(
+        self.right = DecisionNode(parent=self, depth=self.depth + 1,).fit(
             X=self.get_matrix_by_index(X, index_right),
             y=y[index_right],
             recursive=recursive,
@@ -249,11 +240,7 @@ class DecisionTree:
         self.root = DecisionNode()
 
     def fit(self, X, y):
-        self.root._fit(X, y, recursive=True)
-        return self
-
-    def fit_from_data(self, data: MachineLearningData):
-        self.root.fit(data, recursive=True)
+        self.root.fit(X, y, recursive=True)
         return self
 
     def score(self, x):
