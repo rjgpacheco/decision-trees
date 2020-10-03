@@ -10,18 +10,13 @@ from uuid import uuid4
 MIN_NODE_INSTANCES = 1
 NODE_MAX_DEPTH = 3
 
-import logging
-
-FORMAT = "%(asctime)-15s %(message)s"
-logging.basicConfig(filename="decision_trees.log", level=logging.INFO, format=FORMAT)
-
+from logger import logger
 
 class DecisionNode:
     """
     Decision node for a numerical feature
     """
 
-    logging.getLogger(__name__)
 
     def __init__(
         self,
@@ -51,7 +46,7 @@ class DecisionNode:
         self.class_scores = {}
         self.decision_index = decision_index
 
-        logging.info(f"{self.node_id} Initializing node ")
+        logger.info(f"{self.node_id} Initializing node ")
 
     def __repr__(self):
         # return "node"
@@ -117,7 +112,7 @@ class DecisionNode:
 
     def fit(self, X, y, recursive=False, indexes=None):
 
-        logging.info(f"{self.node_id} Calling fit()")
+        logger.info(f"{self.node_id} Calling fit()")
 
         if X is None or y is None:
             raise ValueError("x and y must not be None")
@@ -136,24 +131,24 @@ class DecisionNode:
 
         # Stopping conditions
         if len(categories) <= 1:
-            logging.warning(f"Pure node, stopping training")
+            logger.warning(f"Pure node, stopping training")
             self.decision = y.mean()
             return self
 
         if self.depth >= NODE_MAX_DEPTH:
-            logging.warning(f"Max depth of {NODE_MAX_DEPTH} reached")
+            logger.warning(f"Max depth of {NODE_MAX_DEPTH} reached")
             return None
 
         if self.get_n_instances(X) <= MIN_NODE_INSTANCES:
-            logging.warning("Only one instance supplied to fit()")
+            logger.warning("Only one instance supplied to fit()")
             self.decision = y.mean()  # TODO: This is the "hello world" of decisions
             return self
 
         # Actual node training
         self.indexes = indexes
 
-        logging.info(f"{self.node_id} self.class_counts={self.class_scores}")
-        logging.info(f"{self.node_id} self.class_scores={self.class_counts}")
+        logger.info(f"{self.node_id} self.class_counts={self.class_scores}")
+        logger.info(f"{self.node_id} self.class_scores={self.class_counts}")
 
         # Set boundary and decision
         self.decision_index, self.boundary, self.decision = self.get_best_split(X, y)
@@ -237,13 +232,16 @@ class DecisionTree:
     """
 
     def __init__(self):
+        logger.warning("Initializing DecisionTree")
         self.root = DecisionNode()
 
     def fit(self, X, y):
+        logger.warning("Calling DecisionTree.fit()")
         self.root.fit(X, y, recursive=True)
         return self
 
     def score(self, x):
+        logger.warning("Calling DecisionTree.score()")
         return self.root.traverse(x)
 
     def __repr__(self):
