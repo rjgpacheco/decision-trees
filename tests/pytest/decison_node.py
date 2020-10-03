@@ -16,3 +16,4 @@ y = (y == 0).astype(int)
 
 node = DecisionNode()
 node.fit(X, y, indexes=np.ndarray([]))
+print(node)

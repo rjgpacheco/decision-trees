@@ -16,3 +16,4 @@ y = (y == 0).astype(int)
 
 tree = DecisionTree()
 tree.fit(X, y)
+print(tree)
